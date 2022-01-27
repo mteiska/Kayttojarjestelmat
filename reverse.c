@@ -2,7 +2,7 @@
 #include <stdio.h> // define the header file
 #include <string.h>
 
-typedef struct lista
+typedef struct lista //struct rakenne ja linked lista C-ohjelmoinnin perusteista esimerkkiä
 {
     char line[120];
     struct lista *pNext;
@@ -32,13 +32,13 @@ int main(int argc, char *argv[]) // komentoriviargumentit jotka otetaan kiinni
         if (linesize == -1) {
             break;
         }
-         fprintf(stdout, linebuffer);
+        fprintf(stdout, linebuffer);  //printataan näytölle
         if ((pUusi = (LISTA *)malloc(sizeof(LISTA))) == NULL)
         {
             perror("malloc failed.");
             exit(1);
         }
-        
+       
         strcpy(pUusi->line, linebuffer);
         pUusi->pNext = NULL;
 
@@ -58,8 +58,36 @@ int main(int argc, char *argv[]) // komentoriviargumentit jotka otetaan kiinni
         
     }
     fclose(fp);
-    
+     pUusi = pAlku;
+     printf("Lista oikein päin printattuna. \n");
+      while (pUusi != NULL) { /// Printataan lista oikein päin
+          printf("\n");
+         printf("%s", pUusi->line);
+         pUusi = pUusi->pNext;
+     }
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+/*Kirjoitetaan linked listin kääntäminen toisinpäin*/
 
+    LISTA* aiempi = NULL;
+    LISTA* nykyinen = pAlku;
+    LISTA* seuraava = NULL;
+    printf("Lista käännettynä. \n");
+    while (nykyinen != NULL) {
+        
+        seuraava = nykyinen->pNext;
+        
+       
+        nykyinen-> pNext = aiempi;
+        
+        aiempi = nykyinen;
+        nykyinen = seuraava;
+    }
+    pAlku = aiempi;
+    pUusi = pAlku;
     
-
+     while (pUusi != NULL) {
+          printf("%s\n", pUusi->line);
+          pUusi = pUusi->pNext;
+      }
 }
+
