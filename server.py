@@ -6,7 +6,10 @@ import time
 SERVER_PORT = 5002 # Port to open server with
 SERVER_HOST = "0.0.0.0" #Server uses this as IP
 separator_token = ":" #separating CLIENT from msg
-
+users = {}
+ch1 = []
+ch2 = []
+ch3 = []
 
 client_sockets = set() #unordered set for connections later
 
@@ -18,31 +21,123 @@ s.bind((SERVER_HOST, SERVER_PORT)) #bind to socket so we can receive messages as
 print(f"Trying to listen server {SERVER_HOST}:{SERVER_PORT}")
 s.listen(5) #wait for connection to binded server socket.
 
+def broadcast(message):
+    for client_socket in client_sockets:
+        client_socket.send(message.encode())
+
+def send_msg_ch1(msg):
+    for client in ch1:
+        client.send(msg.encode())
+
+
+# Sends received messages to clients in channel 2
+def send_msg_ch2(msg):
+    for client in ch2:
+        client.send(msg.encode())
+
+
+# Sends received messages to clients in channel 3
+def send_msg_ch3(msg):
+    for client in ch3:
+        client.send(msg.encode())
 
 def listen_clients(client_socket):
     
     while True:
         time.sleep(1)
-        try:
+       
             #continious listening for socket
-         
-            message = client_socket.recv(1024).decode()
-            print(message)
-            message = message.replace(separator_token, ": ")
-            
-        except Exception as e:
-            #If Exception then client no longer connected so remove it from set
-            print("Error: ", e)
+            #WIP: create channels and add user to one channel and remove from another
+        message = client_socket.recv(1024).decode()
+        # Switching users to channel 1 and removing from other channels
+        if 'ch1' in message:
+            print("CH1 loydetty ")
+            if client_socket not in ch1:
+                ch1.append(client_socket)      # Add to channel
+                if client_socket in ch2:
+                    ch2.remove(client_socket)  # Remove from other channels
+                elif client_socket in ch3:
+                    ch3.remove(client_socket)
+                
+                client_socket.send("Switched to channel 1.".encode('utf-8'))
+                continue
+
+            # Switching users to channel 2 and removing from other channels.
+        elif 'ch2' in message:
+            if client_socket not in ch2:
+                ch2.append(client_socket)      # Add to channel
+                if client_socket in ch1:
+                    ch1.remove(client_socket)  # Remove from other channels
+                elif client_socket in ch3:
+                    ch3.remove(client_socket)
+                
+                client_socket.send("Switched to channel 2.".encode('utf-8'))
+                continue
+
+        # Switching users to channel 3 and removing from other channels.
+        elif 'ch3' in message:
+            if client_socket not in ch3:
+                ch3.append(client_socket)      # Add to channel
+                if client_socket in ch1:
+                    ch1.remove(client_socket)  # Remove from other channels
+                elif client_socket in ch2:
+                    ch2.remove(client_socket)
+                
+                client_socket.send("Switched to channel 3.".encode('utf-8'))
+                continue
+
+        # Leave both channels
+        elif 'main' in message:
+            if client_socket in ch1:
+                ch1.remove(client_socket)
+            if client_socket in ch2:
+                ch2.remove(client_socket)
+            if client_socket in ch3:
+                ch3.remove(client_socket)
+            client_socket.send("User left channels.".encode('utf-8'))
+
+        elif 'disconnect' in message:
             client_sockets.remove(client_socket)
+            client_socket.close()
+            for key,value in users.items():
+                
+                if value == client_socket:
+                    deletable = users[key]
+                    
+            del deletable
+                    
             break
+
+
+        elif message.startswith("#"):
+            print("Meni # lohkoon.")
+            print(message)
+            users[message[1:].lower()]=client_socket
+        
+         #WIP: how to send private msg
+        elif message.startswith("@"):
+            print("MENI @ LOHKOON")
+            print("kayttajalle lahetettava viesti on:", message)
+            users[message[1:message.index(':')].lower()].send(message[message.index(':')+1:].encode())
+        else:
+                if client_socket in ch1:
+                    send_msg_ch1(message)
+                elif client_socket in ch2:
+                    send_msg_ch2(message)
+                elif client_socket in ch3:
+                    send_msg_ch3(message)
+                #This is for sending message to all clients
+                else:
+                    broadcast(message)
+
+
+        #except Exception as e:
+            #If Exception then client no longer connected so remove it from set
+            #print("Error: ", e)
+            #client_sockets.remove(client_socket)
+            #break
         
 
-        #This is for sending message to all clients
-        #WIP: how to send private msg
-    
-           
-        for client_socket in client_sockets:
-            client_socket.send(message.encode())
 
 while True:
 
@@ -59,6 +154,5 @@ while True:
     thread.daemon = True
     # start the thread
     thread.start()
-    print(client_sockets)
 
  
